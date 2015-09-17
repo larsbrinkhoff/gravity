@@ -1,0 +1,136 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  </head>
+
+  <body>
+
+    <canvas id="scene" width=800 height=800></canvas><br>
+    Gravity:
+    <input id="gravity" type="checkbox" />
+    Walls:
+    <input id="walls" type="checkbox" />
+
+    <script>
+
+      var bodies = 3;
+      var G = 50.0;
+      var Repel = 50.0;
+      var N = 3.0
+
+      function update(i, j) {
+        var dx = px[i]-px[j];
+        var dy = py[i]-py[j];
+        var r = Math.sqrt(dx*dx + dy*dy);
+
+        dx /= r;
+        dy /= r;
+
+        var f = G*mass[j]/(r*r);
+        if (gravity_checkbox.checked) {
+          vx[i] -= dx*f;
+          vy[i] -= dy*f;
+        }
+
+        r -= radius[i];
+        r -= radius[j];
+        f = Repel*mass[j]*Math.pow(r,-N);
+        vx[i] += dx*f;
+        vy[i] += dy*f;
+      }
+
+      var canvas = document.getElementById ('scene');
+      var ctx = canvas.getContext('2d');
+      var w = canvas.width;
+      var h = canvas.height;
+
+      var gravity_checkbox = document.getElementById('gravity');
+      var walls_checkbox = document.getElementById('walls');
+
+      var mass = new Array(bodies);
+      var radius = new Array(bodies);
+      var px = new Array(bodies);
+      var py = new Array(bodies);
+      var vx = new Array(bodies);
+      var vy = new Array(bodies);
+
+      for(var i = 0; i < bodies; i++) {
+        radius[i] = i * 30 + 10;
+        mass[i] = Math.sqrt(radius[i]);
+        px[i] = (w - 2*radius[i]) * Math.random() + radius[i];
+        py[i] = (h - 2*radius[i]) * Math.random() + radius[i];
+        vx[i] = 0;
+        vy[i] = 0;
+      }
+
+      var redraw = function() {
+          ctx.save();
+          ctx.fillRect(0, 0, w, h);
+
+          for (var i = 0; i < bodies; i++) {
+            circle('white', px[i], py[i], radius[i]);
+          }
+
+          for (var i = 0; i < bodies; i++) {
+            for (var j = 0; j < bodies; j++) {
+              if (i == j)
+                continue;
+              update(i, j);
+            }
+
+            if (walls_checkbox.checked) {
+              var r = px[i];
+              r -= radius[i];
+              var f = Repel*Math.pow(r,-N);
+              vx[i] += f/mass[i];
+
+              r = w - px[i];
+              r -= radius[i];
+              f = Repel*Math.pow(r,-N);
+              vx[i] -= f/mass[i];
+
+              r = py[i];
+              r -= radius[i];
+              f = Repel*Math.pow(r,-N);
+              vy[i] += f/mass[i];
+
+              r = h - py[i];
+              r -= radius[i];
+              f = Repel*Math.pow(r,-N);
+              vy[i] -= f/mass[i];
+            }
+          }
+
+          for (var i = 0; i < bodies; i++) {
+            px[i] += vx[i];
+            py[i] += vy[i];
+          }
+
+          ctx.restore();
+          window.requestAnimationFrame(redraw);
+      }
+
+      function circle(color, px, py, radius) {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(px, py, radius, 0, 2*Math.PI, true);
+          ctx.closePath();
+          ctx.fill();
+      }
+
+      if (!window.requestAnimationFrame) {
+          window.requestAnimationFrame =
+              window.webkitRequestAnimationFrame ||
+              window.mozRequestAnimationFrame ||
+              window.oRequestAnimationFrame ||
+              window.msRequestAnimationFrame ||
+              function(callback, element) {
+                  window.setTimeout(callback, 1000 / 60);
+              };
+      }
+
+      window.requestAnimationFrame(redraw);
+
+    </script>
+  </body>
+</html>
